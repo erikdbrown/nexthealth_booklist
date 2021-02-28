@@ -12,7 +12,6 @@
   align-items: center;
 }
 
-
 .search-bar--Text {
   width: 50%;
   height: 2rem;
@@ -29,12 +28,11 @@
 }
 
 .book-list {
-  position: absolute;
+  margin-top: 4rem;
   display: flex;
+  flex-direction: column;
   height: 100%;
   width: 100%;
-  top: 4rem;
-  background-color: red;
 }
 
 .book-form {
@@ -46,4 +44,26 @@
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.book {
+  height: 5rem;
+  width: 50%;
+  display: flex;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  border: solid 1px;
+  border-radius: 10px;
+}
+
+.book img {
+  padding: 10px;
+}
+
+.book span {
+  line-height: 4rem;
+  margin-left: auto;
+  margin-right: auto;
 }
