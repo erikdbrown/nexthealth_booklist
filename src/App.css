@@ -35,6 +35,10 @@
   width: 100%;
 }
 
+.book-list-none {
+  margin-top: 50%;
+}
+
 .book-form {
   position: fixed;
   background-color: gray;

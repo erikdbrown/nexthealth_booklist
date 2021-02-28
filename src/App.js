@@ -16,12 +16,19 @@ function SearchBar(props) {
 }
 
 function BookList(props) {
+  if (!props.books.length) {
+    return (
+        <div className="book-list-none">
+            You do not have any books stored. Please add a book below.
+        </div>)
+  }
+
   return (
     <div className="book-list">
-      <span>Your Book List</span>
-      {props.books.map((book, index) => (
-        <Book info={book} key={index}/>
-      ))}
+      <span><strong>Your Book List</strong></span>
+      {
+        props.books.map((book, index) => <Book info={book} key={index}/>)
+      }
     </div>
   )
 }
