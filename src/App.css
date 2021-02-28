@@ -27,3 +27,23 @@
   margin-left: 1rem;
   line-height: 2em;
 }
+
+.book-list {
+  position: absolute;
+  display: flex;
+  height: 100%;
+  width: 100%;
+  top: 4rem;
+  background-color: red;
+}
+
+.book-form {
+  position: fixed;
+  background-color: gray;
+  bottom: 0;
+  height: 4rem;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
