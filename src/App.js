@@ -37,9 +37,16 @@ function BookList(props) {
 
   return (
     <div className="book-list">
-      {
-        props.books.map((book, index) => <Book info={book} key={index}/>)
-      }
+      {props.books.map((book, index) => {
+        return (
+          <Book
+            info={book}
+            key={index}
+            markComplete={props.markComplete}
+            removeBook={props.removeBook}
+          />
+        )
+      })}
     </div>
   );
 }
@@ -71,6 +78,14 @@ function Book(props) {
     img_src = props.info.cover.medium
   }
 
+  function removeBook() {
+    props.removeBook(props.info)
+  }
+
+  function markComplete() {
+    props.markComplete(props.info)
+  }
+
   return (
     <div className="book">
       <div><img src={img_src} /></div>
@@ -82,6 +97,10 @@ function Book(props) {
         <div><strong>Year:</strong> {props.info.publish_date}</div>
         <div><strong>Pages:</strong> {props.info.number_of_pages}</div>
         <div className="book-moreInfo"><a href={props.info.url} target="_blank">Click here for more info</a></div>
+      </div>
+      <div className="book-actions">
+        <div onClick={markComplete} className="book-action book-complete">Mark complete</div>
+        <div onClick={removeBook} className="book-action book-delete">Remove</div>
       </div>
     </div>
   );
@@ -125,7 +144,7 @@ class App extends Component {
 
       this.setState({
         allBooks: allBooks,
-        listedBooks: this.getFilteredBooks(allBooks),
+        listedBooks: this.filterBooks(allBooks),
       }, this.storeLocalBook.call(this, cleanISBN));
     });
   }
@@ -165,6 +184,13 @@ class App extends Component {
     localStorage.setItem(this.localStorageKey, JSON.stringify(storedBookIds));
   }
 
+  removeFromStore(book) {
+    const isbn = book.identifiers.isbn_10[0]
+    const bookIds = this.getBookIds()
+    const updatedBookIds = bookIds.filter(bookId => bookId !== isbn)
+    localStorage.setItem(this.localStorageKey, JSON.stringify(updatedBookIds));
+  }
+
   componentDidMount() {
     const bookIds = this.getBookIds();
     return Promise.all(
@@ -177,12 +203,14 @@ class App extends Component {
     });
   }
 
-  getFilteredBooks(allBooks) {
+  filterBooks(allBooks) {
     if (!this.state.filterKey) {
         return allBooks;
     }
 
-    return allBooks.map(book => book.bib_key === this.state.filterKey);
+    return allBooks.map(book => {
+      return JSON.stringify(book).indexOf(this.state.filterKey) >= 0;
+    });
   }
 
   clearFilter() {
@@ -196,9 +224,25 @@ class App extends Component {
     this.setState({
         filterKey: filterTerm,
         listedBooks: this.state.allBooks.filter(book => {
-          return JSON.stringify(book).indexOf(filterTerm) >= 0
+          return JSON.stringify(book).indexOf(filterTerm) >= 0;
         })
     })
+  }
+
+  markComplete(book) {
+    console.log(arguments)
+  }
+
+  removeBook(removedBook) {
+    console.log(removedBook)
+    const allBooks = this.state.allBooks.filter(book => {
+      return book.url !== removedBook.url;
+    });
+
+    this.setState({
+      allBooks,
+      listedBooks: this.filterBooks(allBooks)
+    }, this.removeFromStore(removedBook));
   }
 
   render() {
@@ -208,7 +252,11 @@ class App extends Component {
           filterBookList={this.filterBookList.bind(this)}
           clearFilter={this.clearFilter.bind(this)}
         />
-        <BookList books={this.state.listedBooks}/>
+        <BookList
+          books={this.state.listedBooks}
+          markComplete={this.markComplete.bind(this)}
+          removeBook={this.removeBook.bind(this)}
+        />
         <BookForm addBook={this.addBook.bind(this)}/>
       </div>
     )

@@ -83,3 +83,26 @@
 .book-info div {
   margin: 0.2rem;
 }
+
+.book-actions {
+  flex-grow: 2;
+  display: flex;
+  flex-direction: column;
+}
+
+.book-action {
+  height: 4rem;
+  margin: 0.5rem;
+  line-height: 4rem;
+  border-radius: 10px;
+}
+
+.book-complete {
+  background-color: #E7FFE7;
+  border: solid green 1px;
+}
+
+.book-delete {
+  background-color: #ffcccb;
+  border: solid red 1px;
+}
