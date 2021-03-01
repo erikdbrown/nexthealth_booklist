@@ -39,10 +39,9 @@ function BookList(props) {
     <div className="book-list">
       {props.books.map((book, index) => {
         return (
-          <div>
+          <div key={index}>
             <Book
               info={book}
-              key={index}
               markComplete={props.markComplete}
               removeBook={props.removeBook}
               moveBook={props.moveBook}
@@ -54,24 +53,6 @@ function BookList(props) {
   );
 }
 
-
-function BookForm(props) {
-  const { register, handleSubmit, watch, errors } = useForm();
-
-  return (
-    <div className='book-form'>
-      <span>Add a book to the list</span>
-      <form onSubmit={handleSubmit(props.addBook)}>
-        <input
-          name="isbn"
-          placeholder="Enter book ISBN..."
-          ref={register({ required: true })}
-        />
-        <input type="submit" />
-      </form>
-    </div>
-  );
-}
 
 function Book(props) {
   let img_src = 'https://catalog.loc.gov/vwebv/ui/en_US/images/icons/Book.png';
@@ -134,6 +115,25 @@ function Book(props) {
 }
 
 
+function BookForm(props) {
+  const { register, handleSubmit, watch, errors } = useForm();
+
+  return (
+    <div className='book-form'>
+      <span>Add a book to the list: </span>
+      <form onSubmit={handleSubmit(props.addBook)}>
+        <input
+          name="isbn"
+          placeholder="Enter book ISBN..."
+          ref={register({ required: true })}
+        />
+        <input type="submit" />
+      </form>
+    </div>
+  );
+}
+
+
 class App extends Component {
   localStorageKey = 'books'
 
@@ -144,6 +144,18 @@ class App extends Component {
         listedBooks: [],
         filterKey: '',
     };
+  }
+
+  componentDidMount() {
+    const storedBooks = this.getStoredBooks();
+    return Promise.all(storedBooks.map(storedBook => {
+      return this.fetchBook(storedBook.isbn, {isComplete: storedBook.isComplete})
+    })).then(allBooks => {
+      this.setState({
+        allBooks: allBooks,
+        listedBooks: allBooks,
+      });
+    });
   }
 
   cleanISBN(isbn) {
@@ -160,14 +172,28 @@ class App extends Component {
   }
 
   moveBook(direction, book) {
-    let books;
+    const top = 'top';
+    const bottom = 'bottom';
+    const up = 'up';
+    const down = 'down';
 
-    if (direction === 'up' || direction === 'down') {
+    let books = this.state.allBooks.slice();
+    const currentIndex = books.indexOf(book);
+    const firstIndex = 0;
+    const lastIndex = books.length - 1;
+
+    if (currentIndex === firstIndex && (direction === up || direction === top)) {
+      return;
+    }
+
+    if (currentIndex === lastIndex && (direction === down || direction === bottom)) {
+      return;
+    }
+
+    if (direction === up || direction === down) {
       let newIndex;
-      books = this.state.allBooks.slice();
-      const currentIndex = books.indexOf(book);
 
-      if (direction === 'up') {
+      if (direction === up) {
         newIndex = currentIndex - 1;
       } else {
         newIndex = currentIndex + 1;
@@ -178,13 +204,13 @@ class App extends Component {
       books[currentIndex] = bookAtNewLocation;
     }
 
-    if (direction === 'top' || direction === 'bottom') {
-      books = this.state.allBooks.filter(stateBook => stateBook !== book);
+    if (direction === top || direction === bottom) {
+      books = books.filter(stateBook => stateBook !== book);
 
-      if (direction === 'top') {
-        books.unshift(book)
+      if (direction === top) {
+        books.unshift(book);
       } else {
-        books.push(book)
+        books.push(book);
       }
     }
 
@@ -293,24 +319,10 @@ class App extends Component {
     });
     stateBook.isComplete = isComplete
 
-    debugger;
-
     this.setState({
       allBooks: stateBooks,
       listedBooks: this.filterBooks(stateBooks),
     })
-  }
-
-  componentDidMount() {
-    const storedBooks = this.getStoredBooks();
-    return Promise.all(storedBooks.map(storedBook => {
-      return this.fetchBook(storedBook.isbn, {isComplete: storedBook.isComplete})
-    })).then(allBooks => {
-      this.setState({
-        allBooks: allBooks,
-        listedBooks: allBooks,
-      });
-    });
   }
 
   filterBooks(allBooks) {
@@ -344,7 +356,6 @@ class App extends Component {
   }
 
   removeBook(removedBook) {
-    console.log(removedBook)
     const allBooks = this.state.allBooks.filter(book => {
       return book.url !== removedBook.url;
     });
