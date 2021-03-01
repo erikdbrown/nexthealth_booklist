@@ -91,10 +91,10 @@
 }
 
 .book-action {
-  height: 4rem;
-  margin: 0.5rem;
-  line-height: 4rem;
-  border-radius: 10px;
+  height: 1.2rem;
+  margin: 0.2rem;
+  line-height: 1.2rem;
+  border-radius: 5px;
 }
 
 .book-complete {

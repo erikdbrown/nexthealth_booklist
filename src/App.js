@@ -39,12 +39,15 @@ function BookList(props) {
     <div className="book-list">
       {props.books.map((book, index) => {
         return (
-          <Book
-            info={book}
-            key={index}
-            markComplete={props.markComplete}
-            removeBook={props.removeBook}
-          />
+          <div>
+            <Book
+              info={book}
+              key={index}
+              markComplete={props.markComplete}
+              removeBook={props.removeBook}
+              moveBook={props.moveBook}
+            />
+          </div>
         )
       })}
     </div>
@@ -70,7 +73,6 @@ function BookForm(props) {
   );
 }
 
-
 function Book(props) {
   let img_src = 'https://catalog.loc.gov/vwebv/ui/en_US/images/icons/Book.png';
 
@@ -86,24 +88,46 @@ function Book(props) {
     props.markComplete(props.info);
   }
 
+  function moveUp() {
+    props.moveBook('up', props.info);
+  }
+
+  function moveDown() {
+    props.moveBook('down', props.info);
+  }
+
+  function moveTop() {
+    props.moveBook('top', props.info);
+  }
+
+  function moveBottom() {
+    props.moveBook('bottom', props.info);
+  }
+
   return (
-    <div className="book">
-      <div><img src={img_src} /></div>
-      <div className="book-info">
-        <div><strong>Title:</strong> {props.info.title}</div>
-        <div><strong>Authors(s): </strong>
-        {props.info.authors.map((author, index) => <span key={index}>{author.name}</span>)}
+    <div className="book-container">
+      <div className="book">
+        <div><img src={img_src} /></div>
+        <div className="book-info">
+          <div><strong>Title:</strong> {props.info.title}</div>
+          <div><strong>Authors(s): </strong>
+          {props.info.authors.map((author, index) => <span key={index}>{author.name}</span>)}
+          </div>
+          <div><strong>Year:</strong> {props.info.publish_date}</div>
+          <div><strong>Pages:</strong> {props.info.number_of_pages}</div>
+          <div className="book-moreInfo"><a href={props.info.url} target="_blank">Click here for more info</a></div>
         </div>
-        <div><strong>Year:</strong> {props.info.publish_date}</div>
-        <div><strong>Pages:</strong> {props.info.number_of_pages}</div>
-        <div className="book-moreInfo"><a href={props.info.url} target="_blank">Click here for more info</a></div>
-      </div>
-      <div className="book-actions">
-        {props.info.isComplete
-          ? <div className="book-action book-complete">Completed</div>
-          : <div onClick={markComplete} className="book-action book-incomplete">Mark complete</div>
-        }
-        <div onClick={removeBook} className="book-action book-delete">Remove</div>
+        <div className="book-actions">
+          {props.info.isComplete
+            ? <div className="book-action book-complete">Completed</div>
+            : <div onClick={markComplete} className="book-action book-incomplete">Mark complete</div>
+          }
+          <div onClick={removeBook} className="book-action book-delete">Remove</div>
+          <div onClick={moveUp} className="book-action">move up</div>
+          <div onClick={moveDown} className="book-action">move down</div>
+          <div onClick={moveTop} className="book-action">move top</div>
+          <div onClick={moveBottom} className="book-action">move bottom</div>
+        </div>
       </div>
     </div>
   );
@@ -133,6 +157,41 @@ class App extends Component {
   isBookInStore(book) {
     const foundBook = this.state.allBooks.find(storedBook => storedBook.url === book.url);
     return foundBook !== undefined;
+  }
+
+  moveBook(direction, book) {
+    let books;
+
+    if (direction === 'up' || direction === 'down') {
+      let newIndex;
+      books = this.state.allBooks.slice();
+      const currentIndex = books.indexOf(book);
+
+      if (direction === 'up') {
+        newIndex = currentIndex - 1;
+      } else {
+        newIndex = currentIndex + 1;
+      }
+
+      const bookAtNewLocation = books[newIndex];
+      books[newIndex] = book;
+      books[currentIndex] = bookAtNewLocation;
+    }
+
+    if (direction === 'top' || direction === 'bottom') {
+      books = this.state.allBooks.filter(stateBook => stateBook !== book);
+
+      if (direction == 'top') {
+        books.unshift(book)
+      } else {
+        books.push(book)
+      }
+    }
+
+    this.setState({
+      allBooks: books,
+      listedBooks: this.filterBooks(books),
+    }, )
   }
 
   addBook({isbn}) {
@@ -299,6 +358,7 @@ class App extends Component {
           books={this.state.listedBooks}
           markComplete={this.markComplete.bind(this)}
           removeBook={this.removeBook.bind(this)}
+          moveBook={this.moveBook.bind(this)}
         />
         <BookForm addBook={this.addBook.bind(this)}/>
       </div>
