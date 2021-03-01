@@ -8,7 +8,7 @@ const HTTP_200_OK = 200
 
 
 function SearchBar(props) {
-  const { register, handleSubmit, watch, errors } = useForm();
+  const { register, handleSubmit } = useForm();
 
   return (
     <div className="search-bar">
@@ -42,6 +42,8 @@ function BookList(props) {
           <div key={index}>
             <Book
               info={book}
+              isFirst={index === 0}
+              isLast={index === props.books.length - 1}
               markComplete={props.markComplete}
               removeBook={props.removeBook}
               moveBook={props.moveBook}
@@ -104,10 +106,10 @@ function Book(props) {
             : <div onClick={markComplete} className="book-action book-incomplete">Mark complete</div>
           }
           <div onClick={removeBook} className="book-action book-delete">Remove</div>
-          <div onClick={moveUp} className="book-action">move up</div>
-          <div onClick={moveDown} className="book-action">move down</div>
-          <div onClick={moveTop} className="book-action">move top</div>
-          <div onClick={moveBottom} className="book-action">move bottom</div>
+          {!props.isFirst && <div onClick={moveTop} className="book-action">move top</div> }
+          {!props.isFirst && <div onClick={moveUp} className="book-action">move up</div> }
+          {!props.isLast && <div onClick={moveDown} className="book-action">move down</div> }
+          {!props.isLast && <div onClick={moveBottom} className="book-action">move bottom</div> }
         </div>
       </div>
     </div>
@@ -116,7 +118,7 @@ function Book(props) {
 
 
 function BookForm(props) {
-  const { register, handleSubmit, watch, errors } = useForm();
+  const { register, handleSubmit } = useForm();
 
   return (
     <div className='book-form'>
