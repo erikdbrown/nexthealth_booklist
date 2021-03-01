@@ -181,7 +181,7 @@ class App extends Component {
     if (direction === 'top' || direction === 'bottom') {
       books = this.state.allBooks.filter(stateBook => stateBook !== book);
 
-      if (direction == 'top') {
+      if (direction === 'top') {
         books.unshift(book)
       } else {
         books.push(book)
@@ -191,7 +191,7 @@ class App extends Component {
     this.setState({
       allBooks: books,
       listedBooks: this.filterBooks(books),
-    }, )
+    }, this.refreshLocalBookOrder())
   }
 
   addBook({isbn}) {
@@ -246,6 +246,14 @@ class App extends Component {
     }
 
     return [];
+  }
+
+  refreshLocalBookOrder() {
+    const storedBooks = this.getStoredBooks();
+    const updatedBooks = this.state.allBooks.map(book => {
+      return storedBooks.find(storedBook => storedBook.url === book.url);
+    })
+    localStorage.setItem(this.localStorageKey, JSON.stringify(updatedBooks));
   }
 
   addLocalBook(bookISBN, bookURL) {
