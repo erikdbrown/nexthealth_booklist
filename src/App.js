@@ -8,10 +8,19 @@ const HTTP_200_OK = 200
 
 
 function SearchBar(props) {
+  const { register, handleSubmit, watch, errors } = useForm();
+
   return (
     <div className="search-bar">
-      <input className="search-bar--Text" />
-      <div className="search-bar--Button">Search</div>
+      <form onSubmit={handleSubmit(props.filterBookList)}>
+        <input
+          name="filterTerm"
+          placeholder="Filter by..."
+          ref={register({ required: true })}
+        />
+        <input type="submit" />
+      </form>
+      <a href="#" onClick={props.clearFilter}>Clear filter</a>
     </div>
   );
 }
@@ -28,7 +37,6 @@ function BookList(props) {
 
   return (
     <div className="book-list">
-      <span><strong>Your Book List</strong></span>
       {
         props.books.map((book, index) => <Book info={book} key={index}/>)
       }
@@ -57,10 +65,24 @@ function BookForm(props) {
 
 
 function Book(props) {
+  let img_src = 'https://catalog.loc.gov/vwebv/ui/en_US/images/icons/Book.png';
+
+  if (props.info.cover) {
+    img_src = props.info.cover.medium
+  }
+
   return (
     <div className="book">
-      <img src={props.info.thumbnail_url} />
-      <span><a href={props.info.info_url} target="_blank">Click here for more info</a></span>
+      <div><img src={img_src} /></div>
+      <div className="book-info">
+        <div><strong>Title:</strong> {props.info.title}</div>
+        <div><strong>Authors(s): </strong>
+        {props.info.authors.map((author, index) => <span key={index}>{author.name}</span>)}
+        </div>
+        <div><strong>Year:</strong> {props.info.publish_date}</div>
+        <div><strong>Pages:</strong> {props.info.number_of_pages}</div>
+        <div className="book-moreInfo"><a href={props.info.url} target="_blank">Click here for more info</a></div>
+      </div>
     </div>
   );
 }
@@ -72,12 +94,22 @@ class App extends Component {
   constructor() {
     super();
     this.state = {
-        books: [],
+        allBooks: [],
+        listedBooks: [],
+        filterKey: '',
     };
   }
 
+  cleanISBN(isbn) {
+    return isbn.trim().replaceAll('-', '')
+  }
+
+  getBookKey(isbn) {
+    return `ISBN:${isbn}`;
+  }
+
   addBook({isbn}) {
-    const cleanISBN = isbn.trim().replaceAll('-', '')
+    const cleanISBN = this.cleanISBN(isbn);
 
     if (!cleanISBN) {
         return;
@@ -88,17 +120,27 @@ class App extends Component {
         return;
       }
 
-      const books = this.state.books.slice();
-      books.push(book);
+      const allBooks = this.state.allBooks.slice();
+      allBooks.push(book);
 
-      this.setState({books}, this.storeBookId.call(this, cleanISBN));
+      this.setState({
+        allBooks: allBooks,
+        listedBooks: this.getFilteredBooks(allBooks),
+      }, this.storeLocalBook.call(this, cleanISBN));
     });
   }
 
   fetchBook(isbn) {
-    const bookKey = `ISBN:${isbn}`;
-    const booksUrl = `https://openlibrary.org/api/books?bibkeys=${bookKey}&format=json`;
-    return axios.get(booksUrl).then(response => {
+    const bookKey = this.getBookKey(isbn);
+
+    const booksUrl = `https://openlibrary.org/api/books`;
+    const queryParams = {
+      format: 'json',
+      jscmd: 'data',
+      bibkeys: bookKey,
+    }
+
+    return axios.get(booksUrl, {params: queryParams}).then(response => {
       if (response.status !== HTTP_200_OK) {
         return null;
       }
@@ -117,7 +159,7 @@ class App extends Component {
     return [];
   }
 
-  storeBookId(bookId) {
+  storeLocalBook(bookId) {
     const storedBookIds = this.getBookIds();
     storedBookIds.push(bookId);
     localStorage.setItem(this.localStorageKey, JSON.stringify(storedBookIds));
@@ -127,16 +169,46 @@ class App extends Component {
     const bookIds = this.getBookIds();
     return Promise.all(
         bookIds.map(bookId => this.fetchBook(bookId))
-    ).then(books => {
-        this.setState({books});
+    ).then(allBooks => {
+        this.setState({
+            allBooks: allBooks,
+            listedBooks: allBooks,
+        });
     });
+  }
+
+  getFilteredBooks(allBooks) {
+    if (!this.state.filterKey) {
+        return allBooks;
+    }
+
+    return allBooks.map(book => book.bib_key === this.state.filterKey);
+  }
+
+  clearFilter() {
+    this.setState({
+      filterKey: '',
+      listedBooks: this.state.allBooks.slice()
+    })
+  }
+
+  filterBookList({filterTerm}) {
+    this.setState({
+        filterKey: filterTerm,
+        listedBooks: this.state.allBooks.filter(book => {
+          return JSON.stringify(book).indexOf(filterTerm) >= 0
+        })
+    })
   }
 
   render() {
     return (
       <div className="App">
-        <SearchBar />
-        <BookList books={this.state.books}/>
+        <SearchBar
+          filterBookList={this.filterBookList.bind(this)}
+          clearFilter={this.clearFilter.bind(this)}
+        />
+        <BookList books={this.state.listedBooks}/>
         <BookForm addBook={this.addBook.bind(this)}/>
       </div>
     )
