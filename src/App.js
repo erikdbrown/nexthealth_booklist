@@ -79,11 +79,11 @@ function Book(props) {
   }
 
   function removeBook() {
-    props.removeBook(props.info)
+    props.removeBook(props.info);
   }
 
   function markComplete() {
-    props.markComplete(props.info)
+    props.markComplete(props.info);
   }
 
   return (
@@ -99,7 +99,10 @@ function Book(props) {
         <div className="book-moreInfo"><a href={props.info.url} target="_blank">Click here for more info</a></div>
       </div>
       <div className="book-actions">
-        <div onClick={markComplete} className="book-action book-complete">Mark complete</div>
+        {props.info.isComplete
+          ? <div className="book-action book-complete">Completed</div>
+          : <div onClick={markComplete} className="book-action book-incomplete">Mark complete</div>
+        }
         <div onClick={removeBook} className="book-action book-delete">Remove</div>
       </div>
     </div>
@@ -108,7 +111,7 @@ function Book(props) {
 
 
 class App extends Component {
-  localStorageKey = 'bookIds'
+  localStorageKey = 'books'
 
   constructor() {
     super();
@@ -127,6 +130,11 @@ class App extends Component {
     return `ISBN:${isbn}`;
   }
 
+  isBookInStore(book) {
+    const foundBook = this.state.allBooks.find(storedBook => storedBook.url === book.url);
+    return foundBook !== undefined;
+  }
+
   addBook({isbn}) {
     const cleanISBN = this.cleanISBN(isbn);
 
@@ -134,8 +142,8 @@ class App extends Component {
         return;
     }
 
-    return this.fetchBook(cleanISBN).then(book => {
-      if (!book) {
+    return this.fetchBook(cleanISBN, {isComplete: false}).then(book => {
+      if (!book || this.isBookInStore(book)) {
         return;
       }
 
@@ -145,11 +153,11 @@ class App extends Component {
       this.setState({
         allBooks: allBooks,
         listedBooks: this.filterBooks(allBooks),
-      }, this.storeLocalBook.call(this, cleanISBN));
+      }, this.addLocalBook.call(this, cleanISBN, book.url));
     });
   }
 
-  fetchBook(isbn) {
+  fetchBook(isbn, {isComplete=false}) {
     const bookKey = this.getBookKey(isbn);
 
     const booksUrl = `https://openlibrary.org/api/books`;
@@ -164,42 +172,77 @@ class App extends Component {
         return null;
       }
 
-      return response.data[bookKey];
+      const book = response.data[bookKey];
+      book.isComplete = isComplete
+
+      return book;
     });
   }
 
-  getBookIds() {
-    const storedBookIds = localStorage.getItem(this.localStorageKey);
+  getStoredBooks() {
+    const storedBooks = localStorage.getItem(this.localStorageKey);
 
-    if (storedBookIds && storedBookIds.length) {
-        return JSON.parse(storedBookIds);
+    if (storedBooks && storedBooks.length) {
+        return JSON.parse(storedBooks);
     }
 
     return [];
   }
 
-  storeLocalBook(bookId) {
-    const storedBookIds = this.getBookIds();
-    storedBookIds.push(bookId);
-    localStorage.setItem(this.localStorageKey, JSON.stringify(storedBookIds));
+  addLocalBook(bookISBN, bookURL) {
+    const storedBooks = this.getStoredBooks();
+
+    const newStoredBook = {
+      isbn: bookISBN,
+      url: bookURL,
+      isComplete: false,
+    };
+    storedBooks.push(newStoredBook);
+
+    localStorage.setItem(this.localStorageKey, JSON.stringify(storedBooks));
   }
 
   removeFromStore(book) {
-    const isbn = book.identifiers.isbn_10[0]
-    const bookIds = this.getBookIds()
-    const updatedBookIds = bookIds.filter(bookId => bookId !== isbn)
-    localStorage.setItem(this.localStorageKey, JSON.stringify(updatedBookIds));
+    const storedBooks = this.getStoredBooks();
+    const updatedStoredBooks = storedBooks.filter(storedBook => {
+      return storedBook.url !== book.url;
+    });
+
+    localStorage.setItem(this.localStorageKey, JSON.stringify(updatedStoredBooks));
+  }
+
+  updateStoredBook(book, {isComplete=false}) {
+    const storedBooks = this.getStoredBooks();
+    const storedBook = storedBooks.find(storedBook => {
+      return storedBook.url === book.url;
+    });
+    storedBook.isComplete = isComplete;
+
+    localStorage.setItem(this.localStorageKey, JSON.stringify(storedBooks));
+
+    const stateBooks = this.state.allBooks.slice()
+    const stateBook = stateBooks.find(storedBook => {
+      return storedBook.url === book.url;
+    });
+    stateBook.isComplete = isComplete
+
+    debugger;
+
+    this.setState({
+      allBooks: stateBooks,
+      listedBooks: this.filterBooks(stateBooks),
+    })
   }
 
   componentDidMount() {
-    const bookIds = this.getBookIds();
-    return Promise.all(
-        bookIds.map(bookId => this.fetchBook(bookId))
-    ).then(allBooks => {
-        this.setState({
-            allBooks: allBooks,
-            listedBooks: allBooks,
-        });
+    const storedBooks = this.getStoredBooks();
+    return Promise.all(storedBooks.map(storedBook => {
+      return this.fetchBook(storedBook.isbn, {isComplete: storedBook.isComplete})
+    })).then(allBooks => {
+      this.setState({
+        allBooks: allBooks,
+        listedBooks: allBooks,
+      });
     });
   }
 
@@ -230,7 +273,7 @@ class App extends Component {
   }
 
   markComplete(book) {
-    console.log(arguments)
+    this.updateStoredBook(book, {isComplete: true});
   }
 
   removeBook(removedBook) {

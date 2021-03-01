@@ -102,6 +102,10 @@
   border: solid green 1px;
 }
 
+.book-incomplete {
+  border: solid 1px;
+}
+
 .book-delete {
   background-color: #ffcccb;
   border: solid red 1px;
